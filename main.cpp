@@ -1,16 +1,19 @@
 #include <EventFrameConsumer.hpp>
-#include <EventsFrameProducer.hpp>
+#include <EventFrameProducer.hpp>
 #include <iostream>
 
 
 int main()
 {
     // Event source
-    EventsFrameProducer test_producer;
+    EventFrameProducer test_producer;
     event_spawner<int, int, int> test_spawner;
 
     // Event targer
-    EventFrameConsumer<std::string> test_consumer_1, test_consumer_2;
+    std::string context_1 = "consumer 1";
+    EventFrameConsumer<std::string> test_consumer_1;
+    std::string context_2 = "consumer 2";
+    EventFrameConsumerInstant<std::string> test_consumer_2(context_2);
 
     // Bind listener
     test_consumer_1.add_listener(test_producer,
@@ -45,12 +48,7 @@ int main()
     test_producer.flush_frame_buffers();
 
     // Consume event
-    std::string context_1 = "consumer 1";
     test_consumer_1.serve_frames(context_1);
-
-    std::string context_2 = "consumer 2";
-    test_consumer_2.serve_frames(context_2);
-
 
     test_producer.add_ticket(test_spawner.id(), test_spawner.spawn_event(100, 200, 300));
     test_producer.flush_frame_buffers();
@@ -61,7 +59,6 @@ int main()
 
     // Consume event
     test_consumer_1.serve_frames(context_1);
-    test_consumer_2.serve_frames(context_2);
 
     return 0;
 }
