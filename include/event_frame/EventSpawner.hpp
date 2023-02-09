@@ -2,7 +2,8 @@
 
 #include "Event.hpp"
 #include "EventTicket.hpp"
-#include "Protected.hpp"
+#include <utils/Protected.hpp>
+#include <utils/utils.hpp>
 
 #include <atomic>
 #include <optional>
@@ -18,7 +19,7 @@ template<typename ...Params>
 struct i_event_provider {
     using event_t = event<Params...>;
     using ret_t = std::optional<std::reference_wrapper<const event_t>>;
-    virtual ret_t retrieve_event(const event_ticket& t) = 0;
+    virtual ret_t retrieve_event(const event_ticket&) = 0;
     virtual size_t id() const = 0;
 };
 
@@ -32,7 +33,7 @@ class event_spawner : public i_event_ticket_tracker, public i_event_provider<Par
     using i_spawner_t = i_event_provider<Params...>;
     using event_t = typename i_spawner_t::event_t;
 
-    Protected<std::unordered_map<size_t, std::unique_ptr<event_t>>> events_map;
+    utl_prf::Protected<std::unordered_map<size_t, std::unique_ptr<event_t>>> events_map;
     const size_t id_;
 
     auto next_event_id() {
@@ -40,17 +41,18 @@ class event_spawner : public i_event_ticket_tracker, public i_event_provider<Par
         return ++event_id_counter;
     }
 
-    typename i_spawner_t::ret_t retrieve_event(const event_ticket& t) override {
+    typename i_spawner_t::ret_t retrieve_event(const event_ticket& ticket) override {
         auto locked_map = events_map.lock();
-        auto it = locked_map.get().find(t.id);
-        return locked_map.get().end() != it
-            ? std::make_optional(std::cref(*it->second))
-            : std::nullopt;
+
+        IF_PRESENT(ticket.id, locked_map.get(), it) {
+            return std::make_optional(std::cref(*it->second));
+        }
+        return std::nullopt;
     }
 
     void on_ticket_destroyed(size_t ticket_id) override {
         auto locked_map = events_map.lock();
-        if(auto it = locked_map.get().find(ticket_id); locked_map.get().end() != it) {
+        IF_PRESENT(ticket_id, locked_map.get(), it) {
             locked_map.get().erase(it);
         }
     }
