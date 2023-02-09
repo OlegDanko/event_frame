@@ -3,7 +3,7 @@
 #include <utils/utils.hpp>
 #include "EventFrame.hpp"
 
-struct EventsFrameProducer : IEventFrameProducer {
+struct EventFrameProducer : IEventFrameProducer {
     std::unordered_map<size_t, IEventFrameConsumer*> consumers_by_id;
     std::unordered_map<size_t, std::unordered_set<size_t>> spawner_id_to_consumer_id;
 
