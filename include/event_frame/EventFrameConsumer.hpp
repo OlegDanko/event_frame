@@ -5,19 +5,19 @@
 #include <atomic>
 #include <queue>
 
-class EventFrameConsumerBase : public IEventFrameConsumer {
+class EventSubscriberBase : public IEventSubscriber {
     const size_t id_;
     static size_t next_id() {
         static std::atomic_size_t id{1};
         return id.fetch_add(1);
     }
 public:
-    EventFrameConsumerBase() : id_(next_id()) {}
+    EventSubscriberBase() : id_(next_id()) {}
     size_t id() const override { return id_; }
 };
 
 template<typename ctx_t>
-class EventFrameConsumerTmplBase : public EventFrameConsumerBase {
+class EventSubscriberTmplBase : public EventSubscriberBase {
     using event_listener_ptr_t = std::unique_ptr<i_event_listener<ctx_t>>;
     std::unordered_map<size_t, std::unordered_set<event_listener_ptr_t>> listeners_by_spawner_id;
 
@@ -39,15 +39,15 @@ protected:
     }
 
 public:
-    void add_listener(IEventFrameProducer& producer, event_listener_ptr_t listener) {
-        producer.add_event_frame_consumer(listener->get_spawner_id(), this);
+    void add_listener(IEventChannel& producer, event_listener_ptr_t listener) {
+        producer.add_event_subscriber(listener->get_spawner_id(), this);
         listeners_by_spawner_id[listener->get_spawner_id()].insert(std::move(listener));
     }
 };
 
 template<typename ctx_t>
-class EventFrameConsumer : public EventFrameConsumerTmplBase<ctx_t> {
-    using base_t = EventFrameConsumerTmplBase<ctx_t>;
+class EventSubscriber : public EventSubscriberTmplBase<ctx_t> {
+    using base_t = EventSubscriberTmplBase<ctx_t>;
 
     utl_prf::Protected<std::queue<event_frame_t>> frames;
 
@@ -73,11 +73,11 @@ public:
 };
 
 template<typename ctx_t>
-struct EventFrameConsumerInstant : public EventFrameConsumerTmplBase<ctx_t> {
-    using base_t = EventFrameConsumerTmplBase<ctx_t>;
+struct EventFrameSubscriberInstant : public EventSubscriberTmplBase<ctx_t> {
+    using base_t = EventSubscriberTmplBase<ctx_t>;
 
     ctx_t& context;
-    EventFrameConsumerInstant(ctx_t& context) : context(context) {}
+    EventFrameSubscriberInstant(ctx_t& context) : context(context) {}
 
     void add_event_frame(const event_frame_t& frame) override {
         event_frame_t frame_ = frame;

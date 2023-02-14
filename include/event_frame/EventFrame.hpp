@@ -8,11 +8,12 @@
 
 using event_frame_t = std::unordered_map<size_t, std::unordered_set<std::shared_ptr<event_ticket>>>;
 
-struct IEventFrameConsumer {
+struct IEventSubscriber {
     virtual void add_event_frame(const event_frame_t& frame) = 0;
     virtual size_t id() const = 0;
 };
 
-struct IEventFrameProducer {
-    virtual void add_event_frame_consumer(size_t spawner_id, IEventFrameConsumer* consumer) = 0;
+struct IEventChannel {
+    virtual void add_event_subscriber(size_t spawner_id, IEventSubscriber* subscriber) = 0;
+    virtual void add_ticket(size_t spawner_id, std::shared_ptr<event_ticket> t) = 0;
 };
