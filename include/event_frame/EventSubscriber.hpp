@@ -18,11 +18,11 @@ public:
 
 template<typename ctx_t>
 class EventSubscriberTmplBase : public EventSubscriberBase {
-    using event_listener_ptr_t = std::unique_ptr<i_event_listener<ctx_t>>;
+    using event_listener_ptr_t = std::unique_ptr<IEventListener<ctx_t>>;
     std::unordered_map<size_t, std::unordered_set<event_listener_ptr_t>> listeners_by_spawner_id;
 
 protected:
-    void serve_event_ticket(size_t spawner_id, event_ticket& t, ctx_t& context) {
+    void serve_event_ticket(size_t spawner_id, EventTicket& t, ctx_t& context) {
         IF_PRESENT(spawner_id, listeners_by_spawner_id, listeners_it){
             for(auto& l : listeners_it->second) {
                 l->serve_event(t, context);
@@ -73,11 +73,11 @@ public:
 };
 
 template<typename ctx_t>
-struct EventFrameSubscriberInstant : public EventSubscriberTmplBase<ctx_t> {
+struct EventSubscriberInstant : public EventSubscriberTmplBase<ctx_t> {
     using base_t = EventSubscriberTmplBase<ctx_t>;
 
     ctx_t& context;
-    EventFrameSubscriberInstant(ctx_t& context) : context(context) {}
+    EventSubscriberInstant(ctx_t& context) : context(context) {}
 
     void add_event_frame(const event_frame_t& frame) override {
         event_frame_t frame_ = frame;

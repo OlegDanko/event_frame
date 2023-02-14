@@ -16,10 +16,10 @@ size_t get_event_spawner_id() {
 }
 
 template<typename ...Params>
-struct i_event_provider {
+struct IEventProvider {
     using event_t = event<Params...>;
     using ret_t = std::optional<std::reference_wrapper<const event_t>>;
-    virtual ret_t retrieve_event(const event_ticket&) = 0;
+    virtual ret_t retrieve_event(const EventTicket&) = 0;
     virtual size_t id() const = 0;
 };
 
@@ -29,12 +29,12 @@ struct i_event_provider {
  *  Removes event objects when corresponding event tickets are deleted
  */
 struct IEventSpawnListener {
-    virtual void on_event_spawned(std::shared_ptr<event_ticket>&) = 0;
+    virtual void on_event_spawned(std::shared_ptr<EventTicket>&) = 0;
 };
 
 template<typename ...Params>
-class event_spawner : public i_event_ticket_tracker, public i_event_provider<Params...> {
-    using i_spawner_t = i_event_provider<Params...>;
+class EventSpawner : public IEventTicketTracker, public IEventProvider<Params...> {
+    using i_spawner_t = IEventProvider<Params...>;
     using event_t = typename i_spawner_t::event_t;
 
     utl_prf::Protected<std::unordered_map<size_t, std::unique_ptr<event_t>>> events_map;
@@ -47,7 +47,7 @@ class event_spawner : public i_event_ticket_tracker, public i_event_provider<Par
         return ++event_id_counter;
     }
 
-    typename i_spawner_t::ret_t retrieve_event(const event_ticket& ticket) override {
+    typename i_spawner_t::ret_t retrieve_event(const EventTicket& ticket) override {
         auto locked_map = events_map.lock();
 
         IF_PRESENT(ticket.id, locked_map.get(), it) {
@@ -63,26 +63,24 @@ class event_spawner : public i_event_ticket_tracker, public i_event_provider<Par
         }
     }
 public:
-    event_spawner() : id_(get_event_spawner_id()) {}
+    EventSpawner() : id_(get_event_spawner_id()) {}
 
     void add_event_spawn_listener(IEventSpawnListener* listener) {
         event_spawn_listeners.push_back(listener);
     }
 
-    //TODO: return void
-    std::shared_ptr<event_ticket> spawn_event(const Params& ...params) {
+    void spawn_event(const Params& ...params) {
         auto event_id = next_event_id();
 
         with(auto locked_map = events_map.lock()) {
             locked_map.get()[event_id] = std::make_unique<event_t>(params...);
         }
 
-        auto ticket = std::make_shared<event_ticket>(*this, event_id);
+        auto ticket = std::make_shared<EventTicket>(*this, event_id);
 
         for(auto listener : event_spawn_listeners) {
             listener->on_event_spawned(ticket);
         }
-        return ticket;
     }
 
     size_t id() const override {
