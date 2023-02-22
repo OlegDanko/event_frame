@@ -58,6 +58,8 @@ class EventSpawner : public IEventProvider<Params...> {
 
 public:
     EventSpawner() : id_(get_event_spawner_id()) {}
+    EventSpawner(const EventSpawner&) = delete;
+    EventSpawner(EventSpawner&&) = delete;
 
     void add_event_spawn_listener(IEventSpawnListener* listener) {
         event_spawn_listeners.push_back(listener);
