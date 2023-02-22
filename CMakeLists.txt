@@ -12,10 +12,10 @@ file(GLOB SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/event_frame/EventChannel.cpp
 )
 
-add_library(event_frame ${SRC})
+add_library(event_frame STATIC ${SRC})
 target_link_libraries(event_frame utils)
-target_include_directories(event_frame PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/event_frame)
-target_include_directories(event_frame PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/deps/utils/include)
+include_directories(event_frame PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/event_frame)
+include_directories(event_frame PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/deps/utils/include)
 
 install(TARGETS event_frame
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
