@@ -8,7 +8,7 @@ class EventChannelBase : public IEventChannel {
     std::unordered_map<size_t, std::unordered_set<size_t>> spawner_id_to_subscriber_ids;
     std::unordered_map<size_t, event_frame_t> frame_by_subscriber_id;
 protected:
-    void add_ticket_(size_t spawner_id, std::shared_ptr<EventTicket> t) {
+    void add_ticket_(size_t spawner_id, utl_prf::TicketDispenser::ticket_s_ptr_t t) {
         IF_PRESENT(spawner_id, spawner_id_to_subscriber_ids, subscriber_id_set_it) {
             for(auto subscriber_id : subscriber_id_set_it->second) {
                 frame_by_subscriber_id[subscriber_id][spawner_id].insert(t);
@@ -35,7 +35,7 @@ public:
 struct EventChannelCollector : public EventChannelBase {
     using base_t = EventChannelBase;
 public:
-    void add_ticket(size_t spawner_id, std::shared_ptr<EventTicket> t) override {
+    void add_ticket(size_t spawner_id, utl_prf::TicketDispenser::ticket_s_ptr_t t) override {
         base_t::add_ticket_(spawner_id, t);
     }
     void flush_frame_buffers() {
@@ -46,7 +46,7 @@ public:
 class EventChannelInstant : public EventChannelBase {
     using base_t = EventChannelBase;
 public:
-    void add_ticket(size_t spawner_id, std::shared_ptr<EventTicket> t) override {
+    void add_ticket(size_t spawner_id, utl_prf::TicketDispenser::ticket_s_ptr_t t) override {
         base_t::add_ticket_(spawner_id, t);
         base_t::flush_frame_buffers_();
     }

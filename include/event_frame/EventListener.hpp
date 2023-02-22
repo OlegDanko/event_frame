@@ -7,7 +7,7 @@
 template<typename ctx_t>
 struct IEventListener {
     virtual size_t get_spawner_id() const = 0;
-    virtual void serve_event(const EventTicket& t, ctx_t& context) = 0;
+    virtual void serve_event(utl_prf::TicketDispenser::ticket_s_ptr_t& t, ctx_t& context) = 0;
 };
 
 template<typename ctx_t, typename ...Params>
@@ -23,14 +23,10 @@ public:
         return spawner.id();
     }
 
-    void serve_event(const EventTicket& t, ctx_t& context) override {
-        auto e = spawner.retrieve_event(t);
-        if(!e.has_value()) {
-            return;
+    void serve_event(utl_prf::TicketDispenser::ticket_s_ptr_t& t, ctx_t& context) override {
+        if(auto e_wrapper = spawner.retrieve_event(t); e_wrapper) {
+            auto tpl = std::tuple_cat(std::tuple<ctx_t&>{context}, e_wrapper.unwrap().args);
+            std::apply(callback, tpl);
         }
-        auto tpl = std::tuple_cat(std::tuple<ctx_t&>{context}, e.value().get().args);
-        std::apply(callback, tpl);
     }
 };
-
-using frame_t = std::unordered_map<size_t, EventTicket>;

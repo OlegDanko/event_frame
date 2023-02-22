@@ -22,7 +22,7 @@ class EventSubscriberTmplBase : public EventSubscriberBase {
     std::unordered_map<size_t, std::unordered_set<event_listener_ptr_t>> listeners_by_spawner_id;
 
 protected:
-    void serve_event_ticket(size_t spawner_id, EventTicket& t, ctx_t& context) {
+    void serve_event_ticket(size_t spawner_id, utl_prf::TicketDispenser::ticket_s_ptr_t t, ctx_t& context) {
         IF_PRESENT(spawner_id, listeners_by_spawner_id, listeners_it){
             for(auto& l : listeners_it->second) {
                 l->serve_event(t, context);
@@ -33,11 +33,10 @@ protected:
     void serve_frame(event_frame_t& frame, ctx_t& context) {
         for(auto& spawner_tickets_it : frame) {
             for(auto& ticket : spawner_tickets_it.second) {
-                serve_event_ticket(spawner_tickets_it.first, *ticket, context);
+                serve_event_ticket(spawner_tickets_it.first, ticket, context);
             }
         }
     }
-
 public:
     void add_listener(IEventChannel& producer, event_listener_ptr_t listener) {
         producer.add_event_subscriber(listener->get_spawner_id(), this);

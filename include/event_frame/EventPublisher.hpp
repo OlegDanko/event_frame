@@ -14,7 +14,7 @@ struct EventPublisher : IEventSpawnListener {
         spawner.add_event_spawn_listener(this);
     }
 
-    void on_event_spawned(std::shared_ptr<EventTicket>& ticket) override {
+    void on_event_spawned(utl_prf::TicketDispenser::ticket_s_ptr_t& ticket) override {
         channel.add_ticket(spawner.id(), ticket);
     }
 

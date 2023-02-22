@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Event.hpp"
-#include "EventTicket.hpp"
+//#include "EventTicket.hpp"
 #include <utils/Protected.hpp>
 #include <utils/utils.hpp>
 
@@ -9,6 +9,8 @@
 #include <optional>
 #include <unordered_map>
 #include <memory>
+
+#include <utils/ticket_storage/TicketStorage.hpp>
 
 size_t get_event_spawner_id() {
     static std::atomic_size_t id{1};
@@ -18,8 +20,9 @@ size_t get_event_spawner_id() {
 template<typename ...Params>
 struct IEventProvider {
     using event_t = event<Params...>;
-    using ret_t = std::optional<std::reference_wrapper<const event_t>>;
-    virtual ret_t retrieve_event(const EventTicket&) = 0;
+    using ret_t = typename utl_prf::TicketStorage<const event_t>::ItemWrapper;
+    using ticket_s_ptr_t = utl_prf::TicketDispenser::ticket_s_ptr_t;
+    virtual ret_t retrieve_event(ticket_s_ptr_t&) = 0;
     virtual size_t id() const = 0;
 };
 
@@ -29,15 +32,18 @@ struct IEventProvider {
  *  Removes event objects when corresponding event tickets are deleted
  */
 struct IEventSpawnListener {
-    virtual void on_event_spawned(std::shared_ptr<EventTicket>&) = 0;
+    virtual void on_event_spawned(utl_prf::TicketDispenser::ticket_s_ptr_t&) = 0;
 };
 
 template<typename ...Params>
-class EventSpawner : public IEventTicketTracker, public IEventProvider<Params...> {
+class EventSpawner : public IEventProvider<Params...> {
     using i_spawner_t = IEventProvider<Params...>;
+    using ticket_s_ptr_t = typename i_spawner_t::ticket_s_ptr_t;
     using event_t = typename i_spawner_t::event_t;
 
-    utl_prf::Protected<std::unordered_map<size_t, std::unique_ptr<event_t>>> events_map;
+    utl_prf::TicketStorage<const event_t> storage;
+
+//    utl_prf::Protected<std::unordered_map<size_t, std::unique_ptr<event_t>>> events_map;
     std::vector<IEventSpawnListener*> event_spawn_listeners;
 
     const size_t id_;
@@ -47,21 +53,10 @@ class EventSpawner : public IEventTicketTracker, public IEventProvider<Params...
         return ++event_id_counter;
     }
 
-    typename i_spawner_t::ret_t retrieve_event(const EventTicket& ticket) override {
-        auto locked_map = events_map.lock();
-
-        IF_PRESENT(ticket.id, locked_map.get(), it) {
-            return std::make_optional(std::cref(*it->second));
-        }
-        return std::nullopt;
+    typename i_spawner_t::ret_t retrieve_event(ticket_s_ptr_t& ticket) override {
+        return storage.get(ticket);
     }
 
-    void on_ticket_destroyed(size_t ticket_id) override {
-        auto locked_map = events_map.lock();
-        IF_PRESENT(ticket_id, locked_map.get(), it) {
-            locked_map.get().erase(it);
-        }
-    }
 public:
     EventSpawner() : id_(get_event_spawner_id()) {}
 
@@ -70,13 +65,7 @@ public:
     }
 
     void spawn_event(const Params& ...params) {
-        auto event_id = next_event_id();
-
-        with(auto locked_map = events_map.lock()) {
-            locked_map.get()[event_id] = std::make_unique<event_t>(params...);
-        }
-
-        auto ticket = std::make_shared<EventTicket>(*this, event_id);
+        auto ticket = storage.add(std::make_unique<event_t>(params...));
 
         for(auto listener : event_spawn_listeners) {
             listener->on_event_spawned(ticket);
