@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Event.hpp"
-//#include "EventTicket.hpp"
 #include <utils/Protected.hpp>
 #include <utils/utils.hpp>
 
@@ -12,6 +11,8 @@
 
 #include <utils/ticket_storage/TicketStorage.hpp>
 
+using ticket_s_ptr_t = utl_prf::TicketDispenser::ticket_s_ptr_t;
+
 size_t get_event_spawner_id() {
     static std::atomic_size_t id{1};
     return id.fetch_add(1);
@@ -21,7 +22,6 @@ template<typename ...Params>
 struct IEventProvider {
     using event_t = event<Params...>;
     using ret_t = typename utl_prf::TicketStorage<const event_t>::ItemWrapper;
-    using ticket_s_ptr_t = utl_prf::TicketDispenser::ticket_s_ptr_t;
     virtual ret_t retrieve_event(ticket_s_ptr_t&) = 0;
     virtual size_t id() const = 0;
 };
@@ -32,13 +32,12 @@ struct IEventProvider {
  *  Removes event objects when corresponding event tickets are deleted
  */
 struct IEventSpawnListener {
-    virtual void on_event_spawned(utl_prf::TicketDispenser::ticket_s_ptr_t&) = 0;
+    virtual void on_event_spawned(ticket_s_ptr_t&) = 0;
 };
 
 template<typename ...Params>
 class EventSpawner : public IEventProvider<Params...> {
     using i_spawner_t = IEventProvider<Params...>;
-    using ticket_s_ptr_t = typename i_spawner_t::ticket_s_ptr_t;
     using event_t = typename i_spawner_t::event_t;
 
     utl_prf::TicketStorage<const event_t> storage;
