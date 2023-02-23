@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/deps/utils)
 
 file(GLOB SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/event_frame/EventChannel.cpp
+    src/event_frame/EventChannel.cpp
+    src/event_frame/EventSpawner.cpp
 )
 
 add_library(event_frame STATIC ${SRC})

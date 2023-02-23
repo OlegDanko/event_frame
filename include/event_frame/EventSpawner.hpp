@@ -13,10 +13,7 @@
 
 using ticket_s_ptr_t = utl_prf::TicketDispenser::ticket_s_ptr_t;
 
-size_t get_event_spawner_id() {
-    static std::atomic_size_t id{1};
-    return id.fetch_add(1);
-}
+size_t get_event_spawner_id();
 
 template<typename ...Params>
 struct IEventProvider {
